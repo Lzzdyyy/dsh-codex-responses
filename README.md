@@ -81,23 +81,32 @@ curl -sS https://api.codexhot.com/v1/responses \
 
 > 完整分步说明见 [docs/install.md](docs/install.md)。这里是最短路径。
 
-### 1. 链接到 DSH profile 的 node_modules
+### 1. 作为 bundle 安装（推荐，也是唯一能让它在「已安装」里可见的方式）
 
-DSH 从 profile 的 `node_modules` 解析插件名，所以用 junction 把本目录挂进去（改代码立即生效，无需反复复制）：
+本插件 `package.json` 已声明 `dsh.bundle.patch`，所以直接交给 DSH 的插件管理器安装即可——它会写 profile 的 `dependencies`、装依赖、把包名追加进 `dsh.profile.bundles`：
 
-```powershell
-cmd /c mklink /J "C:\Users\73985\.dsh\profiles\web\node_modules\dsh-codex-responses" "D:\dsh-codex-responses"
+```
+plugin_manager  action=install_bundle  target=D:/dsh-codex-responses
 ```
 
-或者直接跑本仓库的脚本：
+从 GitHub 安装：
 
-```powershell
-powershell -ExecutionPolicy Bypass -File D:\dsh-codex-responses\scripts\install.ps1
+```
+plugin_manager  action=install_bundle  target=https://github.com/Lzzdyyy/dsh-codex-responses
 ```
 
-### 2. 在 profile 的 patch 层挂载插件
+安装成功后 `C:\Users\73985\.dsh\profiles\web\package.json` 会有两处改动：
 
-编辑 `C:\Users\73985\.dsh\profiles\web\cordis.patch.yml`，在顶层数组里追加：
+```json
+"dependencies": { "dsh-codex-responses": "link:D:/dsh-codex-responses" },
+"dsh": { "profile": { "bundles": [ "...", "dsh-codex-responses" ] } }
+```
+
+> ⚠️ 只做 `mklink /J` 把目录链接进 `node_modules`、再手工往 `cordis.patch.yml` 插一行，插件**能跑**，但「应用市场 → 已安装」和「插件管理 → 已安装」**永远不会列出它**——这两个列表的数据源是 profile 的 `dependencies` / `dsh.profile.bundles`，不是 patch 层的行。改代码即时生效的 `link:` 安装方式已经覆盖了开发场景，不需要手工 junction。
+
+### 2. patch 层由 bundle 自带，不要手工再插一遍
+
+仓库根目录的 `cordis.patch.yml` 就是挂载本体：
 
 ```yaml
 - insert:
@@ -106,18 +115,13 @@ powershell -ExecutionPolicy Bypass -File D:\dsh-codex-responses\scripts\install.
       config:
         hosts:
           - api.codexhot.com
+        placeholder: Follow the developer instructions supplied in the input array.
         log: false
 ```
 
-> **必须用 `- insert:` 包裹。** patch 层的方言里，带 `id` 但没有 `insert` 的条目是"覆盖已存在的同名行"，不是"新增"。目标行不存在时 DSH 只打一条警告然后**静默跳过**——插件不会出现在插件列表里，也不会报错。这是最常见的安装失败原因。
+> ⚠️ **不要在 profile 的 `cordis.patch.yml` 里再手工插一个 `id: codex-responses-fix`。** 同一 id 出现两次会让组合阶段直接失败；而带 `id` 但没有 `- insert:` 包裹的条目是「覆盖已存在的同名行」，目标行不存在时 DSH 只打警告然后静默跳过——插件不出现也不报错，这是最常见的安装失败原因。老文档里手工插过的话，先删掉那一段。
 
-或者用脚本自动完成（自动备份、幂等、带中文编码自检）：
-
-```powershell
-node D:\dsh-codex-responses\scripts\apply-profile.mjs
-```
-
-> `install.ps1` 自己不做任何 YAML 编辑，加 `-PatchProfile` 也只是转调 `apply-profile.mjs`。为什么要绕这一道：Windows PowerShell 5.1 默认按 ANSI 读取无 BOM 的 UTF-8，把中文（比如 `displayName: 热核API`）直接写进 yml 会永久损坏配置；`apply-profile.mjs` 用 Node 的确定 UTF-8 读写，并在写盘前比对 CJK 字符数，异常直接中止。
+想同时保护多个中转站，改 `hosts` 列表。
 
 ### 3. 把 provider 改回 responses 通道
 

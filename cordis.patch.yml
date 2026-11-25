@@ -1,0 +1,16 @@
+# dsh-codex-responses bundle patch: mount the dsh-codex-responses plugin.
+#
+# Applied when this bundle appears in a profile's dsh.profile.bundles list,
+# or when this file is referenced directly from a profile's cordis.patch.yml.
+#
+# The plugin wraps globalThis.fetch and, for POST <host>/…/responses requests
+# that carry no non-blank `instructions`, fills in a neutral placeholder so the
+# gateway's 4380-token Codex CLI system prompt fallback is not triggered.
+- insert:
+    - id: codex-responses-fix
+      name: dsh-codex-responses
+      config:
+        hosts:
+          - api.codexhot.com
+        placeholder: Follow the developer instructions supplied in the input array.
+        log: false

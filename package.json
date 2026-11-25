@@ -1,0 +1,46 @@
+{
+  "name": "dsh-codex-responses",
+  "version": "1.0.0",
+  "description": "DeepSeek Harness 插件：绕开第三方中转站 /v1/responses 通道的 Codex CLI 系统提示词强制注入，消除多余 token 计费与规则冲突导致的旁白。",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "openai-responses",
+    "codex",
+    "proxy",
+    "fix"
+  ],
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/",
+    "docs/",
+    "test/",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0-0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
